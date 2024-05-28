@@ -4,6 +4,8 @@ const context = canvas.getContext('2d');
 context.scale(20, 20);
 
 const history = [];
+let linesCleared = 0;
+let mirrorMode = false;
 
 function saveState() {
     history.push({
@@ -11,6 +13,8 @@ function saveState() {
         matrix: player.matrix.map(row => row.slice()),
         pos: { ...player.pos },
         score: player.score,
+        linesCleared: linesCleared,
+        mirrorMode: mirrorMode,
     });
 }
 
@@ -21,14 +25,21 @@ function undoState() {
         player.matrix = previousState.matrix;
         player.pos = previousState.pos;
         player.score = previousState.score;
+        linesCleared = previousState.linesCleared;
+        mirrorMode = previousState.mirrorMode;
         updateScore();
         draw();
     }
 }
 
+function toggleMirrorMode() {
+    mirrorMode = !mirrorMode;
+    player.pos.y = mirrorMode ? arena.length - 1 : 0;
+}
+
 function arenaSweep() {
     let rowCount = 1;
-    outer: for (let y = arena.length - 1; y > 0; --y) {
+    outer: for (let y = arena.length - 1; y >= 0; --y) {
         for (let x = 0; x < arena[y].length; ++x) {
             if (arena[y][x] === 0) {
                 continue outer;
@@ -36,11 +47,20 @@ function arenaSweep() {
         }
 
         const row = arena.splice(y, 1)[0].fill(0);
-        arena.unshift(row);
+        if (mirrorMode) {
+            arena.push(row);
+        } else {
+            arena.unshift(row);
+        }
         ++y;
 
         player.score += rowCount * 10;
+        linesCleared++;
         rowCount *= 2;
+
+        if (linesCleared % 10 === 0) {
+            toggleMirrorMode();
+        }
     }
 }
 
@@ -137,9 +157,9 @@ function draw() {
 function drawGhostPiece() {
     const ghostPos = { ...player.pos };
     while (!collide(arena, { matrix: player.matrix, pos: ghostPos })) {
-        ghostPos.y++;
+        ghostPos.y += mirrorMode ? -1 : 1;
     }
-    ghostPos.y--;
+    ghostPos.y += mirrorMode ? 1 : -1;
     drawMatrix(player.matrix, ghostPos, 'rgba(255, 255, 255, 0.3)');
 }
 
@@ -175,9 +195,9 @@ function rotate(matrix, dir) {
 
 function playerDrop() {
     saveState();
-    player.pos.y++;
+    player.pos.y += mirrorMode ? -1 : 1;
     if (collide(arena, player)) {
-        player.pos.y--;
+        player.pos.y += mirrorMode ? 1 : -1;
         merge(arena, player);
         playerReset();
         arenaSweep();
@@ -197,12 +217,14 @@ function playerMove(dir) {
 function playerReset() {
     const pieces = 'ILJOTSZ';
     player.matrix = createPiece(pieces[pieces.length * Math.random() | 0]);
-    player.pos.y = 0;
+    player.pos.y = mirrorMode ? arena.length - 1 : 0;
     player.pos.x = (arena[0].length / 2 | 0) -
                    (player.matrix[0].length / 2 | 0);
     if (collide(arena, player)) {
         arena.forEach(row => row.fill(0));
         player.score = 0;
+        linesCleared = 0;
+        mirrorMode = false;
         updateScore();
     }
 }
@@ -226,9 +248,9 @@ function playerRotate(dir) {
 function playerDropToBottom() {
     saveState();
     while (!collide(arena, player)) {
-        player.pos.y++;
+        player.pos.y += mirrorMode ? -1 : 1;
     }
-    player.pos.y--;
+    player.pos.y += mirrorMode ? 1 : -1;
     merge(arena, player);
     playerReset();
     arenaSweep();
