@@ -3,6 +3,26 @@ const context = canvas.getContext('2d');
 
 context.scale(20, 20);
 
+const history = [];
+
+function saveState() {
+    history.push({
+        matrix: player.matrix.map(row => row.slice()),
+        pos: { ...player.pos },
+        score: player.score,
+    });
+}
+
+function undoState() {
+    if (history.length > 0) {
+        const previousState = history.pop();
+        player.matrix = previousState.matrix;
+        player.pos = previousState.pos;
+        player.score = previousState.score;
+        updateScore();
+    }
+}
+
 function arenaSweep() {
     let rowCount = 1;
     outer: for (let y = arena.length - 1; y > 0; --y) {
@@ -141,6 +161,7 @@ function rotate(matrix, dir) {
 }
 
 function playerDrop() {
+    saveState();
     player.pos.y++;
     if (collide(arena, player)) {
         player.pos.y--;
@@ -153,6 +174,7 @@ function playerDrop() {
 }
 
 function playerMove(dir) {
+    saveState();
     player.pos.x += dir;
     if (collide(arena, player)) {
         player.pos.x -= dir;
@@ -173,6 +195,7 @@ function playerReset() {
 }
 
 function playerRotate(dir) {
+    saveState();
     const pos = player.pos.x;
     let offset = 1;
     rotate(player.matrix, dir);
@@ -188,6 +211,7 @@ function playerRotate(dir) {
 }
 
 function playerDropToBottom() {
+    saveState();
     while (!collide(arena, player)) {
         player.pos.y++;
     }
@@ -252,10 +276,8 @@ document.addEventListener('keydown', event => {
         playerRotate(1);  // Rotate clockwise on up arrow key
     } else if (event.keyCode === 32) {
         playerDropToBottom();  // Drop to the bottom on space bar
-    } else if (event.keyCode === 81) {
-        playerRotate(-1);
-    } else if (event.keyCode === 87) {
-        playerRotate(1);
+    } else if (event.ctrlKey && event.keyCode === 90) {
+        undoState();  // Undo the last move on Ctrl + Z
     }
 });
 
