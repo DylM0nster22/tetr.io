@@ -20,6 +20,7 @@ function undoState() {
         player.pos = previousState.pos;
         player.score = previousState.score;
         updateScore();
+        draw();
     }
 }
 
@@ -109,11 +110,11 @@ function createPiece(type) {
     }
 }
 
-function drawMatrix(matrix, offset) {
+function drawMatrix(matrix, offset, color = null) {
     matrix.forEach((row, y) => {
         row.forEach((value, x) => {
             if (value !== 0) {
-                context.fillStyle = colors[value];
+                context.fillStyle = color || colors[value];
                 context.fillRect(x + offset.x,
                                  y + offset.y,
                                  1, 1);
@@ -127,7 +128,17 @@ function draw() {
     context.fillRect(0, 0, canvas.width, canvas.height);
 
     drawMatrix(arena, {x: 0, y: 0});
+    drawGhostPiece();
     drawMatrix(player.matrix, player.pos);
+}
+
+function drawGhostPiece() {
+    const ghostPos = { ...player.pos };
+    while (!collide(arena, { matrix: player.matrix, pos: ghostPos })) {
+        ghostPos.y++;
+    }
+    ghostPos.y--;
+    drawMatrix(player.matrix, ghostPos, 'rgba(255, 255, 255, 0.3)');
 }
 
 function merge(arena, player) {
