@@ -167,6 +167,7 @@ function merge(arena, player) {
     player.matrix.forEach((row, y) => {
         row.forEach((value, x) => {
             if (value !== 0) {
+                console.log("Merging at:", y + player.pos.y, x + player.pos.x);
                 arena[y + player.pos.y][x + player.pos.x] = value;
             }
         });
