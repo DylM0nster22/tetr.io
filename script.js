@@ -7,6 +7,7 @@ const history = [];
 
 function saveState() {
     history.push({
+        arena: arena.map(row => row.slice()),
         matrix: player.matrix.map(row => row.slice()),
         pos: { ...player.pos },
         score: player.score,
@@ -16,6 +17,7 @@ function saveState() {
 function undoState() {
     if (history.length > 0) {
         const previousState = history.pop();
+        arena = previousState.arena;
         player.matrix = previousState.matrix;
         player.pos = previousState.pos;
         player.score = previousState.score;
@@ -268,7 +270,7 @@ const colors = [
     'pink',
 ];
 
-const arena = createMatrix(12, 20);
+let arena = createMatrix(12, 20);
 
 const player = {
     pos: {x: 0, y: 0},
